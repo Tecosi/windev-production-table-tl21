@@ -7,11 +7,31 @@ Application de gestion de production multi-utilisateurs avec synchronisation tem
 Cette application WinDev permet de gérer une table de production (`TABLE_Prod_TL21`) avec les fonctionnalités suivantes :
 
 - ✅ **Édition multi-utilisateurs simultanée** avec verrouillage des enregistrements
-- ✅ **Synchronisation temps réel** via HSurveille
+- ✅ **Synchronisation temps réel** (HSurveille ou Sockets)
 - ✅ **Préservation de la saisie** lors des rafraîchissements
 - ✅ **Gestion des conflits** d'édition entre utilisateurs
 - ✅ **Réorganisation des lignes** avec boutons UP/DOWN
 - ✅ **Ajout de nouvelles lignes** avec numérotation automatique
+
+## 🔀 Deux Solutions Disponibles
+
+Ce dépôt propose **deux solutions** de synchronisation temps réel :
+
+### 📌 Branche `main` : Solution HSurveille
+
+- **Méthode** : Polling HFSQL via HSurveille
+- **Latence** : 1-5 secondes
+- **Configuration** : HFSQL Client/Server requis
+- **Idéal pour** : Applications HFSQL existantes
+
+### 🚀 Branche `socket-solution` : Solution Socket (Recommandé pour RDS)
+
+- **Méthode** : Push TCP via sockets
+- **Latence** : < 50ms
+- **Configuration** : Aucune (localhost)
+- **Idéal pour** : RDS, réseau local, performance maximale
+
+**👉 [Voir la solution Socket](https://github.com/Tecosi/windev-production-table-tl21/tree/socket-solution)**
 
 ## 🎯 Problème Résolu
 
