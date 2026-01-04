@@ -1,0 +1,59 @@
+# WinDev Files
+*.wdw
+*.wdp
+*.wdd
+*.wdv
+*.wdm
+*.wdl
+*.wdr
+*.fic
+*.ndx
+*.mmo
+*.ftx
+*.rep
+*.bak
+*.sav
+
+# WinDev Backup
+Backup/
+Sauvegarde/
+
+# WinDev Generated Files
+*.exe
+*.dll
+*.wdk
+*.wdz
+
+# WinDev Project Files (si vous ne voulez pas les partager)
+# Décommentez si nécessaire
+# *.wdp
+# *.wdw
+
+# Logs
+*.log
+*.txt
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Temporary Files
+~$*
+*.tmp
+*.temp
+
+# Database Files (si vous ne voulez pas partager les données)
+*.fic
+*.ndx
+*.mmo
+
+# Documentation temporaire
+*.pdf~
+*.docx~
