@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-// PROCÉDURES SOCKET - COMMUNICATION TEMPS RÉEL
+// PROCÉDURES SOCKET - COMMUNICATION TEMPS RÉEL (VERSION CORRIGÉE)
 // ═══════════════════════════════════════════════════════════════
 // 
 // Ces procédures gèrent la communication socket entre les instances
 // de l'application sur RDS (Remote Desktop Services)
 // 
+// VERSION : 2.0.1 - Corrections syntaxe WinDev
 // ═══════════════════════════════════════════════════════════════
 
 
@@ -27,15 +28,32 @@ SI gbSocketActif = Faux ALORS
 	RETOUR
 FIN
 
-// Construire le message JSON
-stMessage est un JSON
-stMessage.action = sAction
-stMessage.user = gsUtilisateurActuel
-stMessage.timestamp = DateHeureSys()
-stMessage.data = stDonnees
+// Construire le message JSON manuellement
+sJSON est une chaîne
+sJSON = "{"
+sJSON += [" "action":""] + sAction + [" ","]
+sJSON += [" "user":""] + gsUtilisateurActuel + [" ","]
+sJSON += [" "timestamp":""] + DateHeureSys() + [" "]
 
-// Sérialiser en JSON
-sJSON est une chaîne = VariantVersJSON(stMessage)
+// Ajouter les données si présentes
+SI stDonnees <> Null ALORS
+	sJSON += [," "data":{"]
+	
+	// Si c'est un entier simple (idLigne)
+	SI TypeVar(stDonnees) = wlEntier ALORS
+		sJSON += [" "idLigne":"] + stDonnees
+	SINON
+		// Sinon, essayer de sérialiser
+		sDonnees est une chaîne = ChaîneConstruit([" "idLigne":%1], stDonnees)
+		sJSON += sDonnees
+	FIN
+	
+	sJSON += "}"
+FIN
+
+sJSON += "}"
+
+Trace("📤 Envoi JSON : " + sJSON)
 
 // Envoyer selon le rôle
 SI gbEstServeur = Vrai ALORS
@@ -45,7 +63,10 @@ SI gbEstServeur = Vrai ALORS
 	POUR TOUT sNomClient DE gtabClientsConnectes
 		SI SocketEcrit(sNomClient, sJSON) = Faux ALORS
 			// Client déconnecté, le retirer de la liste
-			Supprime(gtabClientsConnectes, IndiceCherche(gtabClientsConnectes, sNomClient))
+			nIndice est un entier = TableauCherche(gtabClientsConnectes, asLigne, sNomClient)
+			SI nIndice > 0 ALORS
+				Supprime(gtabClientsConnectes, nIndice)
+			FIN
 			SocketFerme(sNomClient)
 		FIN
 	FIN
@@ -85,8 +106,9 @@ FIN
 // Ajouter à la liste des clients connectés
 Ajoute(gtabClientsConnectes, sNomClient)
 
-// Lire les messages du client en mode non bloquant
-SocketLit(sNomClient, Vrai, Socket_MessageClient)
+// Lire les messages du client en mode callback
+SocketChangeModeTransmission(sNomClient, SocketSansMarqueurFin)
+SocketLit(sNomClient, Vrai, Socket_MessageClient, sNomClient)
 
 Trace("✅ Nouveau client connecté : " + sNomClient + " (Total : " + Dimension(gtabClientsConnectes) + ")")
 
@@ -110,14 +132,15 @@ SI sMessage = "" ALORS
 	RETOUR
 FIN
 
-// Désérialiser le message JSON
-stMessage est un JSON
-SI PAS JSONVersVariant(stMessage, sMessage) ALORS
-	Trace("❌ Erreur de désérialisation JSON : " + sMessage)
-	RETOUR
-FIN
+Trace("📨 Message brut de client : " + sMessage)
 
-Trace("📨 Message de " + stMessage.user + " : " + stMessage.action)
+// Parser le message JSON manuellement
+sAction est une chaîne = ExtraitChaîne(sMessage, 2, [" "action":""], [" ","])
+sUser est une chaîne = ExtraitChaîne(sMessage, 2, [" "user":""], [" ","])
+sIDLigne est une chaîne = ExtraitChaîne(sMessage, 2, [" "idLigne":"], "}")
+nIDLigne est un entier = Val(sIDLigne)
+
+Trace("📨 Message de " + sUser + " : " + sAction + " (ligne " + nIDLigne + ")")
 
 // ═══════════════════════════════════════════════════════════════
 // BROADCASTER À TOUS LES AUTRES CLIENTS
@@ -126,7 +149,10 @@ POUR TOUT sAutreClient DE gtabClientsConnectes
 	SI sAutreClient <> sNomClient ALORS
 		SI SocketEcrit(sAutreClient, sMessage) = Faux ALORS
 			// Client déconnecté, le retirer de la liste
-			Supprime(gtabClientsConnectes, IndiceCherche(gtabClientsConnectes, sAutreClient))
+			nIndice est un entier = TableauCherche(gtabClientsConnectes, asLigne, sAutreClient)
+			SI nIndice > 0 ALORS
+				Supprime(gtabClientsConnectes, nIndice)
+			FIN
 			SocketFerme(sAutreClient)
 		FIN
 	FIN
@@ -136,7 +162,7 @@ FIN
 // TRAITER LE MESSAGE LOCALEMENT AUSSI
 // (Le serveur est aussi un utilisateur)
 // ═══════════════════════════════════════════════════════════════
-Socket_TraiterMessage(stMessage)
+Socket_TraiterMessage(sAction, sUser, nIDLigne)
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -158,17 +184,18 @@ SI sMessage = "" ALORS
 	RETOUR
 FIN
 
-// Désérialiser le message JSON
-stMessage est un JSON
-SI PAS JSONVersVariant(stMessage, sMessage) ALORS
-	Trace("❌ Erreur de désérialisation JSON : " + sMessage)
-	RETOUR
-FIN
+Trace("📨 Message brut du serveur : " + sMessage)
 
-Trace("📨 Message du serveur : " + stMessage.action + " de " + stMessage.user)
+// Parser le message JSON manuellement
+sAction est une chaîne = ExtraitChaîne(sMessage, 2, [" "action":""], [" ","])
+sUser est une chaîne = ExtraitChaîne(sMessage, 2, [" "user":""], [" ","])
+sIDLigne est une chaîne = ExtraitChaîne(sMessage, 2, [" "idLigne":"], "}")
+nIDLigne est un entier = Val(sIDLigne)
+
+Trace("📨 Message du serveur : " + sAction + " de " + sUser + " (ligne " + nIDLigne + ")")
 
 // Traiter le message
-Socket_TraiterMessage(stMessage)
+Socket_TraiterMessage(sAction, sUser, nIDLigne)
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -178,58 +205,60 @@ Socket_TraiterMessage(stMessage)
 // Traite un message reçu via socket selon son type d'action
 // 
 // Paramètres :
-//   - stMessage : Message JSON désérialisé
+//   - sAction : Type d'action
+//   - sUser : Nom de l'utilisateur émetteur
+//   - nIDLigne : ID de la ligne concernée (0 si non applicable)
 // 
 // ═══════════════════════════════════════════════════════════════
 
-PROCÉDURE Socket_TraiterMessage(stMessage est un JSON)
+PROCÉDURE Socket_TraiterMessage(sAction est une chaîne, sUser est une chaîne, nIDLigne est un entier = 0)
 
 // ═══════════════════════════════════════════════════════════════
 // IGNORER SES PROPRES MESSAGES
 // ═══════════════════════════════════════════════════════════════
-SI stMessage.user = gsUtilisateurActuel ALORS
+SI sUser = gsUtilisateurActuel ALORS
 	RETOUR
 FIN
 
 // ═══════════════════════════════════════════════════════════════
 // TRAITER SELON L'ACTION
 // ═══════════════════════════════════════════════════════════════
-SELON stMessage.action
+SELON sAction
 	CAS "connect"
 		// ───────────────────────────────────────────────────────
 		// Un utilisateur s'est connecté
 		// ───────────────────────────────────────────────────────
-		ToastAffiche("👤 " + stMessage.user + " s'est connecté", toastCourt, cvBas, chCentre)
+		ToastAffiche("👤 " + sUser + " s'est connecté", toastCourt, cvBas, chCentre)
 		
 	CAS "disconnect"
 		// ───────────────────────────────────────────────────────
 		// Un utilisateur s'est déconnecté
 		// ───────────────────────────────────────────────────────
-		ToastAffiche("👤 " + stMessage.user + " s'est déconnecté", toastCourt, cvBas, chCentre)
+		ToastAffiche("👤 " + sUser + " s'est déconnecté", toastCourt, cvBas, chCentre)
 		
 	CAS "lock"
 		// ───────────────────────────────────────────────────────
 		// Une ligne a été verrouillée par un autre utilisateur
 		// ───────────────────────────────────────────────────────
-		Socket_TraiterVerrouillage(stMessage.data.idLigne, stMessage.user)
+		Socket_TraiterVerrouillage(nIDLigne, sUser)
 		
 	CAS "unlock"
 		// ───────────────────────────────────────────────────────
 		// Une ligne a été déverrouillée par un autre utilisateur
 		// ───────────────────────────────────────────────────────
-		Socket_TraiterDeverrouillage(stMessage.data.idLigne)
+		Socket_TraiterDeverrouillage(nIDLigne)
 		
 	CAS "update"
 		// ───────────────────────────────────────────────────────
 		// Une ligne a été modifiée par un autre utilisateur
 		// ───────────────────────────────────────────────────────
-		Socket_TraiterMiseAJour(stMessage.data.idLigne, stMessage.user)
+		Socket_TraiterMiseAJour(nIDLigne, sUser)
 		
 	AUTRE CAS
 		// ───────────────────────────────────────────────────────
 		// Action inconnue
 		// ───────────────────────────────────────────────────────
-		Trace("⚠️ Action socket inconnue : " + stMessage.action)
+		Trace("⚠️ Action socket inconnue : " + sAction)
 FIN
 
 
@@ -254,7 +283,7 @@ POUR i = 1 À TableOccurrence(TABLE_Prod_TL21)
 		TABLE_Prod_TL21.COL_Modifie_par[i] = sUtilisateur
 		
 		// Rafraîchir l'affichage de cette ligne
-		TableAfficheLigne(TABLE_Prod_TL21, i)
+		TableAffiche(TABLE_Prod_TL21, taLigneAffichée, i)
 		
 		// Toast discret
 		ToastAffiche("🔒 " + sUtilisateur + " édite la ligne " + i, toastCourt, cvBas, chCentre)
@@ -284,7 +313,7 @@ POUR i = 1 À TableOccurrence(TABLE_Prod_TL21)
 		TABLE_Prod_TL21.COL_Modifie_par[i] = ""
 		
 		// Rafraîchir l'affichage de cette ligne
-		TableAfficheLigne(TABLE_Prod_TL21, i)
+		TableAffiche(TABLE_Prod_TL21, taLigneAffichée, i)
 		
 		SORTIR
 	FIN

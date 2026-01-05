@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// ÉVÉNEMENT : ENTRÉE DANS COL_xxx (VERSION SOCKET)
+// ÉVÉNEMENT : ENTRÉE DANS COL_xxx (VERSION SOCKET CORRIGÉE)
 // ═══════════════════════════════════════════════════════════════
 // 
 // À appliquer sur les 26 colonnes éditables :
@@ -13,6 +13,7 @@
 // - COL_HSFEreb, COL_HSFDerb, COL_HeureVC
 // - COL_Reprise, COL_Vconvoyeur
 // 
+// VERSION : 2.0.1 - Corrections syntaxe WinDev
 // ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
@@ -30,8 +31,8 @@ VerrouillerLignePourSaisie()
 // Récupérer l'ID de la ligne
 nIDLigne est un entier = TABLE_Prod_TL21.COL_ID
 
-// Envoyer le message de verrouillage
-Socket_Envoyer("lock", {idLigne: nIDLigne})
+// Envoyer le message de verrouillage (passer l'ID directement)
+Socket_Envoyer("lock", nIDLigne)
 
 Trace("🔒 Verrouillage de la ligne " + nIDLigne + " notifié")
 
@@ -43,7 +44,7 @@ Trace("🔒 Verrouillage de la ligne " + nIDLigne + " notifié")
 // Séquence :
 // 1. User A entre dans une cellule
 // 2. VerrouillerLignePourSaisie() verrouille localement
-// 3. Socket_Envoyer("lock") notifie les autres utilisateurs
+// 3. Socket_Envoyer("lock", nIDLigne) notifie les autres utilisateurs
 // 4. User B reçoit le message et voit "Modifié par User A"
 // 
 // Avantages :

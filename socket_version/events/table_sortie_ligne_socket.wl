@@ -1,5 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
-// ÉVÉNEMENT : SORTIE DE SAISIE D'UNE LIGNE (VERSION SOCKET)
+// ÉVÉNEMENT : SORTIE DE SAISIE D'UNE LIGNE (VERSION SOCKET CORRIGÉE)
+// ═══════════════════════════════════════════════════════════════
+// 
+// VERSION : 2.0.1 - Corrections syntaxe WinDev
 // ═══════════════════════════════════════════════════════════════
 
 // Récupérer l'ID de la ligne avant l'enregistrement
@@ -48,7 +51,7 @@ FIN
 // ÉTAPE 4 : NOTIFIER LE DÉVERROUILLAGE VIA SOCKET
 // ═══════════════════════════════════════════════════════════════
 
-Socket_Envoyer("unlock", {idLigne: nIDLigne})
+Socket_Envoyer("unlock", nIDLigne)
 
 Trace("🔓 Déverrouillage de la ligne " + nIDLigne + " notifié")
 
@@ -57,7 +60,7 @@ Trace("🔓 Déverrouillage de la ligne " + nIDLigne + " notifié")
 // ÉTAPE 5 : NOTIFIER LA MISE À JOUR VIA SOCKET
 // ═══════════════════════════════════════════════════════════════
 
-Socket_Envoyer("update", {idLigne: nIDLigne})
+Socket_Envoyer("update", nIDLigne)
 
 Trace("📝 Mise à jour de la ligne " + nIDLigne + " notifiée")
 
@@ -99,8 +102,8 @@ FIN
 // Séquence :
 // 1. User A sort de la ligne (enregistrement)
 // 2. EnregistrerLigneModifiee() sauvegarde dans HFSQL
-// 3. Socket_Envoyer("unlock") notifie le déverrouillage
-// 4. Socket_Envoyer("update") notifie la mise à jour
+// 3. Socket_Envoyer("unlock", nIDLigne) notifie le déverrouillage
+// 4. Socket_Envoyer("update", nIDLigne) notifie la mise à jour
 // 5. User B reçoit les messages et rafraîchit sa table
 // 
 // Avantages :
